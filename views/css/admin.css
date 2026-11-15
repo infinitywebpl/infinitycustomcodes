@@ -1,0 +1,38 @@
+textarea.icc-code {
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 4;
+}
+
+.icc-snippet {
+  cursor: copy;
+  white-space: nowrap;
+}
+
+.icc-help .icc-help-namespace {
+  margin-top: 15px;
+}
+
+.icc-help .icc-help-namespace small {
+  font-weight: normal;
+}
+
+.icc-help-table .icc-help-tag {
+  width: 35%;
+  white-space: nowrap;
+}
+
+.icc-var {
+  cursor: pointer;
+}
+
+.icc-preview-output,
+.icc-preview-value {
+  margin: 0;
+  max-height: 400px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
