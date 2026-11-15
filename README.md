@@ -4,6 +4,10 @@ Moduł PrestaShop 8.1+ (PHP ≥ 8.1). Wstawia własne fragmenty HTML/JS (piksele
 
 **To wersja demo.** Działa wstawianie kodów w nagłówku i stopce strony. Pozostałe funkcje widać w panelu i w kodzie, ale nie działają. Są w pełnej wersji. Kontakt w sprawie pełnej wersji: https://www.infinityweb.pl/oferta/moduly-prestashop, biuro@infinityweb.pl
 
+### [⬇ Pobierz demo (ZIP do wgrania w PrestaShop)](https://github.com/infinitywebpl/infinitycustomcodes/releases/latest)
+
+W wydaniu pobierz plik `infinitycustomcodes-<wersja>-demo.zip`, a nie „Source code”: tylko on ma katalog, który PrestaShop zainstaluje.
+
 Panel: **Moduły → Własne kody na stronie (demo) → Konfiguruj**.
 
 ## Co działa w demie
@@ -43,9 +47,10 @@ Dostęp do panelu modułu oznacza **możliwość wstrzyknięcia dowolnego JavaSc
 
 ## Instalacja i przejście na pełną wersję
 
+- Pobierz ZIP z [najnowszego wydania](https://github.com/infinitywebpl/infinitycustomcodes/releases/latest) i wgraj go w PrestaShop: **Moduły → Menedżer modułów → Wgraj moduł**.
 - Instalacja tworzy tabele `PREFIX_infinitycustomcodes_code` i `PREFIX_infinitycustomcodes_fired`, rejestruje hooki i ukrytą zakładkę panelu.
 - **Odinstalowanie usuwa wszystkie kody.**
-- Przejście na pełną wersję: wgraj pliki pełnej wersji w miejsce dema. Zapisane kody zostają.
+- Przejście na pełną wersję: wgraj pliki pełnej wersji w miejsce dema (bez odinstalowywania). Zapisane kody zostają.
 
 ## Licencja
 
