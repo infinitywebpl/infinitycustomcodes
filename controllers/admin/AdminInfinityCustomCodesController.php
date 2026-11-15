@@ -3,7 +3,8 @@
  * Panel kodów: lista z pozycjami, formularz, duplikowanie, ściągawka zmiennych i podgląd.
  *
  * Wersja demo: działają kody w nagłówku i stopce. Pozostałe opcje formularza są widoczne, ale nieaktywne,
- * a podgląd i zmienne prowadzą do pełnej wersji (InfinityCustomCodesDemo::FULL_VERSION_URL).
+ * a podgląd i zmienne prowadzą do pełnej wersji (InfinityCustomCodesDemo). Widok „Licencja” w wariancie demo:
+ * bez klucza i bez paska „Wersja niezarejestrowana”.
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -18,6 +19,9 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
 {
     /** Wartość w base64: Cookie::__set() odrzuca znak `|`, który występuje w ostrzeżeniach (np. `|json`). */
     private const WARNINGS_COOKIE = 'infinitycustomcodes_warnings';
+
+    /** Widok „Licencja”: parametr w URL i wartość $this->display. */
+    private const LICENSE_PARAM = 'license';
 
     public function __construct()
     {
@@ -142,7 +146,7 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
                 'previewError' => $this->trans('Nie udało się wykonać podglądu.', [], 'Modules.Infinitycustomcodes.Admin'),
                 'demo' => [
                     'placements' => array_map(static fn (InfinityCustomCodesPlacement $placement): string => $placement->value, InfinityCustomCodesDemo::PLACEMENTS),
-                    'variables' => $this->trans('Zmienne są dostępne w pełnej wersji modułu: %url%', ['%url%' => InfinityCustomCodesDemo::FULL_VERSION_URL], 'Modules.Infinitycustomcodes.Admin'),
+                    'variables' => self::plain($this->trans('Zmienne są dostępne w pełnej wersji modułu: %url%', ['%url%' => InfinityCustomCodesDemo::FULL_VERSION_URL], 'Modules.Infinitycustomcodes.Admin')),
                 ],
             ],
         ]);
@@ -162,18 +166,53 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
             }
         }
 
-        $this->informations[] = $this->trans('Wersja demo: kody w nagłówku (head) i stopce (footer) na wszystkich stronach. Początek body, potwierdzenie zamówienia, widget, wybór stron, zmienne, „raz na zamówienie”, podgląd i tryb debug są w pełnej wersji: %url%, %email%', ['%url%' => InfinityCustomCodesDemo::FULL_VERSION_URL, '%email%' => InfinityCustomCodesDemo::CONTACT_EMAIL], 'Modules.Infinitycustomcodes.Admin');
+        // AdminController::initContent() nie zna tego widoku i wyrenderowałby listę. Bez uprawnienia
+        // do podglądu parent::initContent() sam zgłasza błąd i niczego nie renderuje.
+        if ($this->display === self::LICENSE_PARAM && $this->viewAccess()) {
+            $this->content .= $this->renderLicense();
+            $this->context->smarty->assign(['content' => $this->content]);
+
+            return;
+        }
+
+        // Wersja demo: zamiast paska „Wersja niezarejestrowana” komunikat o pełnej wersji.
+        if (!$this->ajax) {
+            $this->informations[] = $this->trans('Wersja demo: kody w nagłówku (head) i stopce (footer) na wszystkich stronach. Początek body, potwierdzenie zamówienia, widget, wybór stron, zmienne, „raz na zamówienie”, podgląd i tryb debug są w pełnej wersji: %url%, %email%', ['%url%' => InfinityCustomCodesDemo::FULL_VERSION_URL, '%email%' => InfinityCustomCodesDemo::CONTACT_EMAIL], 'Modules.Infinitycustomcodes.Admin');
+        }
 
         parent::initContent();
     }
 
+    public function initToolbarTitle()
+    {
+        parent::initToolbarTitle();
+
+        if ($this->display === self::LICENSE_PARAM) {
+            $title = $this->trans('Licencja', [], 'Modules.Infinitycustomcodes.Admin');
+            $this->toolbar_title[] = $title;
+            $this->addMetaTitle($title);
+        }
+    }
+
     public function initPageHeaderToolbar()
     {
-        if (empty($this->display) || $this->display === 'list') {
-            $this->page_header_toolbar_btn['new'] = [
-                'href' => self::$currentIndex . '&add' . $this->table . '&token=' . $this->token,
-                'desc' => $this->trans('Dodaj kod', [], 'Modules.Infinitycustomcodes.Admin'),
-                'icon' => 'process-icon-new',
+        if ($this->display === self::LICENSE_PARAM) {
+            $this->page_header_toolbar_btn['back'] = [
+                'href' => self::$currentIndex . '&token=' . $this->token,
+                'desc' => $this->trans('Wróć do listy', [], 'Modules.Infinitycustomcodes.Admin'),
+            ];
+        } else {
+            if (empty($this->display) || $this->display === 'list') {
+                $this->page_header_toolbar_btn['new'] = [
+                    'href' => self::$currentIndex . '&add' . $this->table . '&token=' . $this->token,
+                    'desc' => $this->trans('Dodaj kod', [], 'Modules.Infinitycustomcodes.Admin'),
+                    'icon' => 'process-icon-new',
+                ];
+            }
+            $this->page_header_toolbar_btn['license'] = [
+                'href' => $this->getLicenseUrl(),
+                'desc' => $this->trans('Licencja', [], 'Modules.Infinitycustomcodes.Admin'),
+                'icon' => 'process-icon-flag',
             ];
         }
 
@@ -183,6 +222,13 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
     public function initProcess()
     {
         parent::initProcess();
+
+        if (Tools::getIsset(self::LICENSE_PARAM)) {
+            // Wersja demo: widok bez klucza, więc bez akcji zapisu.
+            $this->display = self::LICENSE_PARAM;
+
+            return;
+        }
 
         if (Tools::getIsset('duplicate' . $this->table)) {
             if ($this->access('add')) {
@@ -221,7 +267,7 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
             $available = InfinityCustomCodesDemo::isAvailable(InfinityCustomCodesPlacement::from($placement));
             $placementOptions[] = ['id' => $placement, 'name' => $available ? $label : $label . ' ' . $fullVersion];
         }
-        $onlyFull = ' ' . $this->trans('Dostępne w pełnej wersji modułu.', [], 'Modules.Infinitycustomcodes.Admin');
+        $onlyFull = $this->trans('Dostępne w pełnej wersji modułu.', [], 'Modules.Infinitycustomcodes.Admin');
 
         $yesNo = static fn (string $name, string $yes, string $no): array => [
             ['id' => $name . '_on', 'value' => 1, 'label' => $yes],
@@ -258,7 +304,7 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
                     'label' => $this->trans('Klucz widgetu', [], 'Modules.Infinitycustomcodes.Admin'),
                     'name' => 'widget_key',
                     'maxlength' => 64,
-                    'desc' => $this->getWidgetKeyHelp($code) . '<br>' . htmlspecialchars(trim($onlyFull), ENT_QUOTES, 'UTF-8'),
+                    'desc' => $this->getWidgetKeyHelp($code) . '<br>' . $this->escapeTranslated($onlyFull),
                 ],
                 [
                     'type' => 'checkbox',
@@ -266,7 +312,7 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
                     'name' => 'pages',
                     'values' => ['query' => $pageOptions, 'id' => 'id', 'name' => 'name'],
                     'form_group_class' => 'icc-pages-group',
-                    'desc' => $this->trans('„Wszystkie” wyklucza pozostałe. Dla potwierdzenia zamówienia pole jest ignorowane.', [], 'Modules.Infinitycustomcodes.Admin') . $onlyFull,
+                    'desc' => $this->trans('„Wszystkie” wyklucza pozostałe. Dla potwierdzenia zamówienia pole jest ignorowane.', [], 'Modules.Infinitycustomcodes.Admin') . ' ' . $onlyFull,
                 ],
                 [
                     'type' => 'textarea',
@@ -291,7 +337,7 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
                     'is_bool' => true,
                     'values' => $yesNo('once_per_order', $yes, $no),
                     'form_group_class' => 'icc-once-group',
-                    'desc' => $this->trans('Kod konwersji nie wykona się ponownie po odświeżeniu strony potwierdzenia. Działa tylko, gdy kod ma dostęp do zamówienia.', [], 'Modules.Infinitycustomcodes.Admin') . $onlyFull,
+                    'desc' => $this->trans('Kod konwersji nie wykona się ponownie po odświeżeniu strony potwierdzenia. Działa tylko, gdy kod ma dostęp do zamówienia.', [], 'Modules.Infinitycustomcodes.Admin') . ' ' . $onlyFull,
                 ],
                 [
                     'type' => 'switch',
@@ -363,11 +409,11 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
         header('Content-Type: application/json; charset=utf-8');
 
         if (!$this->access('edit') && !$this->access('add')) {
-            $html = '<div class="alert alert-danger">' . $this->escape($this->trans('Brak uprawnień do podglądu.', [], 'Modules.Infinitycustomcodes.Admin')) . '</div>';
+            $html = '<div class="alert alert-danger">' . $this->escapeTranslated($this->trans('Brak uprawnień do podglądu.', [], 'Modules.Infinitycustomcodes.Admin')) . '</div>';
         } else {
             try {
                 // Pełna wersja.
-                $html = '<div class="alert alert-info">' . $this->escape($this->trans('Podgląd renderowania jest dostępny w pełnej wersji modułu: %url%', ['%url%' => InfinityCustomCodesDemo::FULL_VERSION_URL], 'Modules.Infinitycustomcodes.Admin')) . '</div>';
+                $html = '<div class="alert alert-info">' . $this->escapeTranslated($this->trans('Podgląd renderowania jest dostępny w pełnej wersji modułu: %url%', ['%url%' => InfinityCustomCodesDemo::FULL_VERSION_URL], 'Modules.Infinitycustomcodes.Admin')) . '</div>';
             } catch (\Throwable $e) {
                 $html = '<div class="alert alert-danger">' . $this->escape($e->getMessage()) . '</div>';
             }
@@ -447,30 +493,32 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
             . '&duplicate' . $this->table . '&token=' . ($token ?: $this->token);
 
         return '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">'
-            . '<i class="icon-copy"></i> ' . htmlspecialchars($this->trans('Duplikuj', [], 'Modules.Infinitycustomcodes.Admin'), ENT_QUOTES, 'UTF-8')
+            . '<i class="icon-copy"></i> ' . $this->escapeTranslated($this->trans('Duplikuj', [], 'Modules.Infinitycustomcodes.Admin'))
             . '</a>';
     }
 
     public function renderPlacementLabel($placement, array $row): string
     {
-        return htmlspecialchars($this->getPlacementLabels()[$placement] ?? (string) $placement, ENT_QUOTES, 'UTF-8');
+        $labels = $this->getPlacementLabels();
+
+        return isset($labels[$placement]) ? $this->escapeTranslated($labels[$placement]) : $this->escape((string) $placement);
     }
 
     public function renderPagesLabel($pages, array $row): string
     {
         $labels = $this->getPageLabels();
         $names = array_map(
-            static fn (string $page): string => $labels[$page] ?? $page,
+            fn (string $page): string => isset($labels[$page]) ? $this->escapeTranslated($labels[$page]) : $this->escape($page),
             array_filter(explode(',', (string) $pages))
         );
 
-        return htmlspecialchars(implode(', ', $names), ENT_QUOTES, 'UTF-8');
+        return implode(', ', $names);
     }
 
     public function renderWidgetSnippet($widgetKey, array $row): string
     {
         // Pełna wersja.
-        return '<span class="text-muted">' . htmlspecialchars($this->trans('pełna wersja', [], 'Modules.Infinitycustomcodes.Admin'), ENT_QUOTES, 'UTF-8') . '</span>';
+        return '<span class="text-muted">' . $this->escapeTranslated($this->trans('pełna wersja', [], 'Modules.Infinitycustomcodes.Admin')) . '</span>';
     }
 
     public function renderOncePerOrder($value, array $row): string
@@ -682,6 +730,86 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
         return '';
     }
 
+    /**
+     * Widok „Licencja”, wariant demo (docs licencji InfinityWeb.pl, „Wersja demo”): bez klucza i bez statusu.
+     * Szablon dostaje gotowy HTML z licenseHtml().
+     */
+    private function renderLicense(): string
+    {
+        $email = InfinityCustomCodesDemo::CONTACT_EMAIL;
+        $mailto = '<a href="mailto:' . $this->escape($email) . '"><strong>' . $this->escape($email) . '</strong></a>';
+
+        $features = [
+            $this->trans('kody na początku body i na stronie potwierdzenia zamówienia', [], 'Modules.Infinitycustomcodes.Admin'),
+            $this->trans('{widget} w dowolnym szablonie .tpl', [], 'Modules.Infinitycustomcodes.Admin'),
+            $this->trans('wybór typów stron (główna, kategoria, produkt, koszyk, checkout, CMS…)', [], 'Modules.Infinitycustomcodes.Admin'),
+            $this->trans('zmienne produktu, koszyka i zamówienia ({{product.price}}, {{order.total_paid}}…)', [], 'Modules.Infinitycustomcodes.Admin'),
+            $this->trans('„raz na zamówienie” dla kodów konwersji', [], 'Modules.Infinitycustomcodes.Admin'),
+            $this->trans('podgląd renderowania i tryb debug', [], 'Modules.Infinitycustomcodes.Admin'),
+        ];
+
+        $tpl = $this->createTemplate('license.tpl');
+        $tpl->assign([
+            'back_url' => self::$currentIndex . '&token=' . $this->token,
+            'github_url' => InfinityCustomCodesDemo::GITHUB_URL,
+            'site_url' => InfinityCustomCodesDemo::SITE_URL,
+            'features' => array_map(fn (string $feature): string => $this->escapeTranslated($feature), $features),
+            'html' => [
+                'header' => $this->licenseHtml(
+                    $this->trans('%name% · wersja %version% · Wersja demo · autor InfinityWeb.pl', [], 'Modules.Infinitycustomcodes.Admin'),
+                    ['%name%' => (string) $this->module->displayName, '%version%' => (string) $this->module->version]
+                ),
+                'demo' => '<strong>' . $this->trans('To jest wersja demo.', [], 'Modules.Infinitycustomcodes.Admin') . '</strong> '
+                    . $this->trans('Działa w niej część funkcji modułu. Pozostałe widać w panelu i w kodzie, ale działają tylko w wersji pełnej.', [], 'Modules.Infinitycustomcodes.Admin'),
+                'full' => $this->trans('Wersja pełna:', [], 'Modules.Infinitycustomcodes.Admin'),
+                'contact' => $this->licenseHtml(
+                    $this->trans('Chcesz wersję pełną? Napisz na %email% albo zajrzyj na %url%', [], 'Modules.Infinitycustomcodes.Admin'),
+                    [],
+                    ['%email%' => $mailto, '%url%' => $this->externalLink(InfinityCustomCodesDemo::FULL_VERSION_URL)]
+                ),
+                'back' => $this->trans('Wróć do listy', [], 'Modules.Infinitycustomcodes.Admin'),
+                'more_title' => $this->trans('Więcej modułów PrestaShop od InfinityWeb.pl', [], 'Modules.Infinitycustomcodes.Admin'),
+                'more_github' => $this->licenseHtml(
+                    $this->trans('Dema innych modułów znajdziesz na GitHubie: %url%', [], 'Modules.Infinitycustomcodes.Admin'),
+                    [],
+                    ['%url%' => $this->externalLink(InfinityCustomCodesDemo::GITHUB_URL)]
+                ),
+                'more_site' => $this->licenseHtml(
+                    $this->trans('Opisy, przykłady użycia i kontakt: %url%', [], 'Modules.Infinitycustomcodes.Admin'),
+                    [],
+                    ['%url%' => $this->externalLink(InfinityCustomCodesDemo::SITE_URL)]
+                ),
+                'more_github_button' => $this->trans('Moduły na GitHubie', [], 'Modules.Infinitycustomcodes.Admin'),
+                'footer' => $this->trans('Wersja demo nie sprawdza licencji i nie wysyła żadnych danych do autora.', [], 'Modules.Infinitycustomcodes.Admin'),
+            ],
+        ]);
+
+        return $tpl->fetch();
+    }
+
+    /**
+     * Wynik trans() z kontrolera jest już po htmlspecialchars(ENT_NOQUOTES) (Controller::trans() w 8.1),
+     * więc tu nie escapujemy go drugi raz. Znaczniki %…% podmieniamy na escapowane wartości ($values)
+     * albo gotowe fragmenty HTML ($html). Tłumaczenia nie zawierają HTML.
+     *
+     * @param array<string, string> $values
+     * @param array<string, string> $html
+     */
+    private function licenseHtml(string $translated, array $values = [], array $html = []): string
+    {
+        return strtr($translated, array_map(fn (string $value): string => $this->escape($value), $values) + $html);
+    }
+
+    private function externalLink(string $url): string
+    {
+        return '<a href="' . $this->escape($url) . '" target="_blank" rel="noopener">' . $this->escape($url) . '</a>';
+    }
+
+    private function getLicenseUrl(): string
+    {
+        return self::$currentIndex . '&' . self::LICENSE_PARAM . '=1&token=' . $this->token;
+    }
+
     private function describePreviewProblem(string $problem): string
     {
         // Pełna wersja.
@@ -711,6 +839,24 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
     }
 
     /**
+     * Escapowanie wyniku $this->trans(), który Controller::trans() zwraca już po htmlspecialchars(ENT_NOQUOTES).
+     * Bez ponownego kodowania encji (`&lt;` zostaje `&lt;`), ale z cudzysłowami, więc nadaje się też do atrybutów.
+     * W szablonach odpowiednik to `|escape:'html':'UTF-8':false`.
+     */
+    private function escapeTranslated(string $translated): string
+    {
+        return htmlspecialchars($translated, ENT_QUOTES, 'UTF-8', false);
+    }
+
+    /**
+     * Wynik $this->trans() jako zwykły tekst, gdy trafia jako parametr do kolejnego trans(), który escapuje całość.
+     */
+    private static function plain(string $translated): string
+    {
+        return htmlspecialchars_decode($translated, ENT_NOQUOTES);
+    }
+
+    /**
      * `all`, lista zaznaczonych typów stron albo '' (nic nie zaznaczono).
      */
     private function getPagesFromPost(): string
@@ -726,9 +872,9 @@ class AdminInfinityCustomCodesController extends ModuleAdminController
             : self::widgetSnippet(0, 'klucz');
         $example = "{widget name='infinitycustomcodes' code='klucz' id_product=\$product.id_product param_list='Polecane'}";
 
-        return htmlspecialchars($this->trans('Opcjonalny: małe litery, cyfry, „-” i „_”, nie same cyfry. Wstawienie w szablonie .tpl:', [], 'Modules.Infinitycustomcodes.Admin'), ENT_QUOTES, 'UTF-8')
+        return $this->escapeTranslated($this->trans('Opcjonalny: małe litery, cyfry, „-” i „_”, nie same cyfry. Wstawienie w szablonie .tpl:', [], 'Modules.Infinitycustomcodes.Admin'))
             . '<br><code class="icc-snippet">' . htmlspecialchars($snippet, ENT_QUOTES, 'UTF-8') . '</code>'
-            . '<br>' . htmlspecialchars($this->trans('Z parametrami (nadpisują kontekst strony):', [], 'Modules.Infinitycustomcodes.Admin'), ENT_QUOTES, 'UTF-8')
+            . '<br>' . $this->escapeTranslated($this->trans('Z parametrami (nadpisują kontekst strony):', [], 'Modules.Infinitycustomcodes.Admin'))
             . '<br><code class="icc-snippet">' . htmlspecialchars($example, ENT_QUOTES, 'UTF-8') . '</code>';
     }
 

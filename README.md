@@ -47,6 +47,10 @@ Dostęp do panelu modułu oznacza **możliwość wstrzyknięcia dowolnego JavaSc
 - **Odinstalowanie usuwa wszystkie kody.**
 - Przejście na pełną wersję: wgraj pliki pełnej wersji w miejsce dema. Zapisane kody zostają.
 
+## Licencja
+
+Warunki korzystania z wersji demo: [LICENSE.md](LICENSE.md). Przycisk **„Licencja”** w nagłówku panelu pokazuje, co jest w wersji pełnej, i kontakt. Wersja demo jest bezpłatna, bez kluczy i bez sprawdzania licencji. Wersja pełna wymaga licencji na domenę sklepu: [biuro@infinityweb.pl](mailto:biuro@infinityweb.pl).
+
 ## Tłumaczenia
 
 Teksty są po polsku w kodzie, w domenach `Modules.Infinitycustomcodes.Admin` i `Modules.Infinitycustomcodes.Shop`. Inny język dodaje się w „Tłumaczeniach” PrestaShop (typ: moduły).

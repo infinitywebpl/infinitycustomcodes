@@ -28,6 +28,10 @@ textarea.icc-code {
   cursor: pointer;
 }
 
+.icc-license-form {
+  margin-bottom: 20px;
+}
+
 .icc-preview-output,
 .icc-preview-value {
   margin: 0;

@@ -18,6 +18,10 @@ final class InfinityCustomCodesDemo
 
     public const CONTACT_EMAIL = 'biuro@infinityweb.pl';
 
+    public const SITE_URL = 'https://www.infinityweb.pl';
+
+    public const GITHUB_URL = 'https://github.com/infinitywebpl';
+
     /** Miejsca działające w demie. */
     public const PLACEMENTS = [
         InfinityCustomCodesPlacement::Head,
