@@ -4,6 +4,8 @@ Moduł PrestaShop 8.1+ (PHP ≥ 8.1). Wstawia własne fragmenty HTML/JS (piksele
 
 **To wersja demo.** Działa wstawianie kodów w nagłówku i stopce strony. Pozostałe funkcje widać w panelu i w kodzie, ale nie działają. Są w pełnej wersji. Kontakt w sprawie pełnej wersji: https://www.infinityweb.pl/oferta/moduly-prestashop, biuro@infinityweb.pl
 
+Opis modułu z przykładami użycia: [PrestaShop: GTM, piksele i kody konwersji bez grzebania w motywie](https://www.infinityweb.pl/posts/prestashop-gtm-piksele-kody-konwersji?utm_source=github&utm_medium=readme&utm_campaign=infinitycustomcodes)
+
 ### [⬇ Pobierz demo (ZIP do wgrania w PrestaShop)](https://github.com/infinitywebpl/infinitycustomcodes/releases/latest)
 
 W wydaniu pobierz plik `infinitycustomcodes-<wersja>-demo.zip`, a nie „Source code”: tylko on ma katalog, który PrestaShop zainstaluje.
